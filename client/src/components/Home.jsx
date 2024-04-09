@@ -1,55 +1,96 @@
 import React, { useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
-import Note from "./Note";
-import CreateArea from "./CreateArea";
 
 function Home() {
   const [notes, setNotes] = useState([]);
+  const [newNote, setNewNote] = useState({ title: "", content: "" });
 
   useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const response = await fetch(`http://localhost:5000/api/notes?name=${localStorage.getItem('userName')}`);
-        const fetchedNotes = await response.json();
-        setNotes(fetchedNotes);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
     fetchNotes();
   }, []);
 
-  function addNote(newNote) {
-    setNotes(prevNotes => {
-      return [...prevNotes, newNote];
-    });
+  async function fetchNotes() {
+    try {
+      const response = await fetch(`http://localhost:5000/api/notes`);
+      const fetchedNotes = await response.json();
+      setNotes(fetchedNotes);
+    } catch (err) {
+      console.log(err);
+    }
   }
 
-  function deleteNote(id) {
-    setNotes(prevNotes => {
-      return prevNotes.filter((noteItem, index) => {
-        return index !== id;
+  async function addNote() {
+    try {
+      const response = await fetch("http://localhost:5000/api/notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newNote)
       });
-    });
+
+      const createdNote = await response.json();
+
+      setNotes(prevNotes => [...prevNotes, createdNote]);
+      setNewNote({ title: "", content: "" });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function deleteNote(id) {
+    try {
+      await fetch(`http://localhost:5000/api/notes/${id}`, {
+        method: "DELETE"
+      });
+
+      setNotes(prevNotes => prevNotes.filter(noteItem => noteItem.id !== id));
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  function handleInputChange(event) {
+    const { name, value } = event.target;
+    setNewNote(prevNote => ({ ...prevNote, [name]: value }));
+  }
+
+  async function handleFormSubmit(event) {
+    event.preventDefault();
+    await addNote();
   }
 
   return (
     <div>
       <Header />
-      <CreateArea onAdd={addNote} />
-      {notes.map((noteItem, index) => {
-        return (
-          <Note
-            key={index}
-            id={index}
-            title={noteItem.title}
-            content={noteItem.content}
-            onDelete={deleteNote}
+      <div className="createArea">
+        <form onSubmit={handleFormSubmit} className="areaForm">
+          <input
+            name="title"
+            onChange={handleInputChange}
+            value={newNote.title}
+            placeholder="Title"
           />
-        );
-      })}
+          <textarea
+            name="content"
+            onChange={handleInputChange}
+            value={newNote.content}
+            placeholder="Take a note..."
+            rows="3"
+          />
+          <button type="submit">Keep</button>
+        </form>
+      </div>
+      <div>
+        {notes.map((noteItem) => (
+          <div className="note" key={noteItem.id}>
+            <h1>{noteItem.title}</h1>
+            <p>{noteItem.content}</p>
+            <button onClick={() => deleteNote(noteItem.id)}>DELETE</button>
+          </div>
+        ))}
+      </div>
       <Footer />
     </div>
   );
