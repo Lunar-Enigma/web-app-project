@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import pg from 'pg';
+import bcrypt from 'bcrypt';
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client';
 
@@ -54,37 +54,64 @@ app.delete('/api/notes/:id', async (req, res) =>{
     }
 })
 
-// app.post('/login', (req, res) => {
-//     const { email, password } = req.body;
-//     if  (!email || !password) return res.status(400).send('Missing fields')
-//     const query = `SELECT * FROM users WHERE email=$1`;
-//     db.query(query, [email], (err, results) => {
-//         if (err) return res.status(500).send("Oops! An error occured")
-//         else if (results.rows.length === 0) res.send("No user found")
-//         else {
-//             if (results.rows[0].password === password) {
-//                 res.send("Success")
-//                 userName = results.rows[0].name;
-//             } else {
-//                 res.send("Invalid Password");
-//             }
-//         }
-//     });
-// })
+app.post('/login', async (req, res) =>{
+    const { email, password } = req.body;
+    if (!email || !password){
+        return res.status(400).send('Missing Fields');
+    }
 
-// app.post('/register', (req, res) => {
-//   const { name, email, password } = req.body;
-//   console.log(name + ", " + email + ", " + password);
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email },
+        });
 
-//   db.query("INSERT INTO users (name, email, password) VALUES ($1, $2, $3)", [name, email, password])
-//     .then(() => {
-//       res.status(200).send("User registered successfully");
-//     })
-//     .catch(err => {
-//       console.log(err);
-//       res.status(500).send("Error registering user");
-//     });
-// });
+        if (!user) res.send('User not found');
+
+        if( bcrypt.compare(password, user.password) ) {
+            res.send('Success')
+        } else {
+            res.send('Failed')
+        }
+    } catch (err) {
+        console.error(err);
+        res.sendStatus(500).send('Error occured while finding the user')
+    }
+})
+
+app.post('/register', async (req, res) => {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+        return res.status(400).send('Missing Fields');
+    }
+
+    try {
+        const existingUser = await prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (existingUser) {
+            return res.status(400).send('User with this email already exists');
+        }
+
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await prisma.user.create({
+            data: {
+                name,
+                email,
+                password: hashPassword,
+            },
+        });
+
+        console.log(`User created: name - ${name}, email - ${email}`);
+        res.send("Success");
+
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).send('Error creating user');
+    }
+});
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");

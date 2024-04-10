@@ -9,22 +9,32 @@ function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+  
     try {
-      const response = await axios.post('http://localhost:5000/login', { email, password });
-
-      if (response.data === "Success") {
+      const response = await fetch('http://localhost:5000/login', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
+  
+      const data = await response.text();
+      if(data === "Missing Fields"){
+        alert("Please fill out all fields.")
+      }else if (data === 'Success') {
         navigate("/home");
-      } else if (response.data === "Invalid Password") {
-        alert("Incorrect Password! Please try again.");
+      } else if (data === 'Failed') {
+        alert("Incorrect Password!");
       } else {
-        alert("User does not exist! Please sign up first.");
+        alert("User does not exist");
       }
     } catch (error) {
       console.error("Login error:", error);
       alert("An error occurred during login. Please try again.");
     }
   };
+  
 
   return (
     <div className="container">
@@ -48,10 +58,10 @@ function Login() {
           value={password}
           required
         />
-        <button type="submit">Submit</button>
+        <button type="submit" className="logres">Submit</button>
       </form>
       <p>Don't have an account?</p>
-      <Link to="/register"><button>Register</button></Link>
+      <Link to="/register"><button className="logres">Register</button></Link>
     </div>
   );
 }

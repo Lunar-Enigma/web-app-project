@@ -18,3 +18,9 @@ model Note {
   title   String
   content String
 }
+
+model  User {
+  name      String
+  email     String   @unique
+  password  String
+}

@@ -8,16 +8,32 @@ function Register() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    axios.post('http://localhost:5000/register', { name, email, password })
-      .then(response => {
-        console.log("Submitted:", name, email, password);
-        navigate("/login")
-      })
-      .catch(err => {
-        console.log(err);
+
+    try {
+      const response = await fetch('http://localhost:5000/register', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name, email, password })
       });
+
+      const data = await response.text();
+      if(data === "Missing Fields"){
+        alert("Please fill out all fields.")
+      }else if (data === 'Success') {
+        navigate("/login");
+      } else {
+        alert("An error occured");
+      }
+
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("An error occurred during login. Please try again.");
+    };
+
   }
   
 
@@ -47,9 +63,9 @@ function Register() {
           placeholder="Password"
           value={password}
         />
-        <button type="submit">Submit</button>
+        <button type="submit" className="logres">Submit</button>
       </form>
-      <Link to="/login"><button>Login</button></Link>
+      <Link to="/login"><button className="logres">Login</button></Link>
     </div>
   );
 }
