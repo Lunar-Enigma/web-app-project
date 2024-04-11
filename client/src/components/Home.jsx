@@ -12,7 +12,12 @@ function Home() {
 
   async function fetchNotes() {
     try {
-      const response = await fetch(`http://localhost:5000/api/notes`);
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://localhost:5000/api/notes`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       const fetchedNotes = await response.json();
       setNotes(fetchedNotes);
     } catch (err) {

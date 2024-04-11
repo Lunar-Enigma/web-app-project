@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from 'axios';
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -19,16 +18,13 @@ function Login() {
         body: JSON.stringify({ email, password })
       });
   
-      const data = await response.text();
-      if(data === "Missing Fields"){
-        alert("Please fill out all fields.")
-      }else if (data === 'Success') {
-        navigate("/home");
-      } else if (data === 'Failed') {
-        alert("Incorrect Password!");
-      } else {
-        alert("User does not exist");
-      }
+      const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem('token', data.token);
+            navigate("/home");
+        } else {
+            alert(data.message);
+        }
     } catch (error) {
       console.error("Login error:", error);
       alert("An error occurred during login. Please try again.");

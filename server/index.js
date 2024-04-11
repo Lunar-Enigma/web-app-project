@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client';
 
@@ -9,7 +10,20 @@ app.use(express.json());
 app.use(cors());
 const prisma = new PrismaClient();
 
-app.get('/api/notes', async (req, res) => {
+const verifyToken = (req, res, next) => {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).send('Access Denied');
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        res.status(403).send('Invalid Token');
+    }
+};
+
+app.get('/api/notes', verifyToken, async (req, res) => {
 
     const notes = await prisma.note.findMany();
 
@@ -54,7 +68,7 @@ app.delete('/api/notes/:id', async (req, res) =>{
     }
 })
 
-app.post('/login', async (req, res) =>{
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password){
         return res.status(400).send('Missing Fields');
@@ -65,18 +79,24 @@ app.post('/login', async (req, res) =>{
             where: { email },
         });
 
-        if (!user) res.send('User not found');
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
 
-        if( bcrypt.compare(password, user.password) ) {
-            res.send('Success')
+        const passwordMatch = await bcrypt.compare(password, user.password);
+
+        if (passwordMatch) {
+            const token = jwt.sign({ userId: user.id }, process.env.JWT_ACCESS, { expiresIn: '1h' });
+            res.json({ token });
         } else {
-            res.send('Failed')
+            res.status(401).send('Incorrect password');
         }
     } catch (err) {
         console.error(err);
-        res.sendStatus(500).send('Error occured while finding the user')
+        res.status(500).send('Error occurred while finding the user');
     }
-})
+});
+
 
 app.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
