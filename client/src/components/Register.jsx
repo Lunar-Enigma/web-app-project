@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link , useNavigate} from "react-router-dom";
 
 function Register() {
@@ -6,6 +6,30 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
+    function handleCallbackResponse(response) {
+    console.log(response.credentials);
+    navigate("/home")
+  }
+
+  useEffect(() => {
+    if (typeof google !== 'undefined' && google.accounts) {
+      google.accounts.id.initialize({
+        client_id: "949452364659-qhevbng5h4qja6t4u490aljcu8t2uvic.apps.googleusercontent.com",
+        callback: handleCallbackResponse
+      });
+  
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            document.cookie =  `g_state=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+            google.accounts.id.prompt()
+        }
+    });
+
+    } else {
+      console.error('Google API not loaded.');
+    }
+  }, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -64,7 +88,7 @@ function Register() {
         />
         <button type="submit" className="logres">Submit</button>
       </form>
-      <Link to="/login"><button className="logres">Login</button></Link>
+      <Link to="/"><button className="logres">Login</button></Link>
     </div>
   );
 }
