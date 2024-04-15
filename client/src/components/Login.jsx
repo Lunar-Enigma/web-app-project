@@ -14,7 +14,7 @@ function Login() {
   useEffect(() => {
     if (typeof google !== 'undefined' && google.accounts) {
       google.accounts.id.initialize({
-        client_id: "949452364659-qhevbng5h4qja6t4u490aljcu8t2uvic.apps.googleusercontent.com",
+        client_id: /* Insert Google OAuth Client ID Here */ "",
         callback: handleCallbackResponse
       });
   
